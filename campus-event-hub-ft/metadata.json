@@ -1,0 +1,6 @@
+{
+  "name": "Campus Event Hub",
+  "description": "A complete, production-ready frontend hub for managing campus events, user profiles, team matching, and live collaborative chat.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
