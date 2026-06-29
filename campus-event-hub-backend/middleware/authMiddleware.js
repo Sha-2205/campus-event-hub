@@ -42,7 +42,8 @@ export const protect = async (req, res, next) => {
 
     user.lastLogin = new Date();
     await user.save();
-
+    console.log("Before next()");
+    console.log("typeof next:", typeof next);
     next();
   } catch (error) {
     console.log("JWT Error:", error.message);
