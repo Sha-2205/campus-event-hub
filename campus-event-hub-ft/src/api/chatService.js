@@ -11,7 +11,7 @@ initSocket() {
       localStorage.getItem('campus_event_hub_token') ||
       localStorage.getItem('token');
 
-    socket = io('http://localhost:5000', {
+    socket = io('https://campus-event-hub-75ml.onrender.com', {
       auth: {
         token
       },
