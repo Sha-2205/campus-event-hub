@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create a custom axios instance with relative paths for perfect cross-origin/sandbox routing
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ,
+  baseURL: import.meta.env.VITE_API_BASE_URL|| 'https://campus-event-hub-75ml.onrender.com' ,
   headers: {
     'Content-Type': 'application/json',
   },
