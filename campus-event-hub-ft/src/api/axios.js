@@ -11,9 +11,12 @@ const api = axios.create({
 // Request Interceptor: Attach the bearer session token automatically
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('campus_event_hub_token');
+    const token =
+      localStorage.getItem('campus_event_hub_token') ||
+      localStorage.getItem('token');
+
     if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`;
     }
 
     // Normalize outgoing requests (e.g., map major/year, confirmPassword, etc.)
@@ -71,6 +74,7 @@ api.interceptors.request.use(
       };
       config.data = normalizePayload(config.data);
     }
+
     return config;
   },
   (error) => {
