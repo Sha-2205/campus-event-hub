@@ -6,17 +6,23 @@ const authService = {
     return response.data; // Expected response: { token, user: { id, email, name, major } }
   },
 
-  login: async (email, password) => {
-    const response = await api.post('/api/auth/login', { email, password });
+login: async (email, password) => {
+  const res = await api.post('/api/auth/login', { email, password });
 
-    const { token, user } = response.data;
+  console.log("LOGIN RESPONSE:", res.data);
 
-    // SAVE TOKEN HERE (THIS IS THE MISSING PART)
-    localStorage.setItem("campus_event_hub_token", token);
-    localStorage.setItem("campus_event_hub_user", JSON.stringify(user));
+  const { token, user } = res.data;
 
-    return response.data;
-  },
+  if (!token) {
+    console.error("NO TOKEN RECEIVED FROM BACKEND");
+    return;
+  }
+
+  localStorage.setItem("campus_event_hub_token", token);
+  localStorage.setItem("campus_event_hub_user", JSON.stringify(user));
+
+  return res.data;
+},
 
   logout: async () => {
     const response = await api.post('/api/auth/logout');
