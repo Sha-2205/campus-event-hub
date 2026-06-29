@@ -9,7 +9,6 @@ import LoginForm from '../../components/auth/LoginForm';
 export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
   const { login } = useAuth();
   const { showToast } = useApp();
   const navigate = useNavigate();
@@ -63,7 +62,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md flex flex-col gap-8 relative z-10">
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center gap-3">
-          <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-sky-500 flex items-center justify-center text-white shadow-xl shadow-indigo-600/20">
+          <div className="h-12 w-12 rounded-2xl bg-linear-to-tr from-indigo-600 to-sky-500 flex items-center justify-center text-white shadow-xl shadow-indigo-600/20">
             <Compass className="w-6 h-6 animate-spin-slow" />
           </div>
           <div>

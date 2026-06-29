@@ -4,175 +4,198 @@ import authService from '../api/authService';
 
 const AuthContext = createContext(null);
 
+const TOKEN_KEY = 'campus_event_hub_token';
+const USER_KEY = 'campus_event_hub_user';
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Initialize: Auto-Login check & session restoration
+  // -------------------------------
+  // INIT AUTH (AUTO LOGIN)
+  // -------------------------------
   useEffect(() => {
     async function initializeAuth() {
-      const storedToken = localStorage.getItem('campus_event_hub_token');
-      const storedUser = localStorage.getItem('campus_event_hub_user');
+      const storedToken = localStorage.getItem(TOKEN_KEY);
 
-      if (storedToken) {
-        try {
-          // Verify session integrity with the /api/auth/me endpoint
-          const authData = await authService.getMe();
-          setUser(authData.user);
-
-          // Get the full profile details from profile endpoints
-          const profileResponse = await api.get('/api/profile/me/profile');
-          setProfile(profileResponse.data);
-        } catch (error) {
-          console.error("Auto-login session expired or invalid:", error);
-          // If token or session expired, clear stored credentials gracefully
-          localStorage.removeItem('campus_event_hub_token');
-          localStorage.removeItem('campus_event_hub_user');
-          setUser(null);
-          setProfile(null);
-        }
-      } else if (storedUser) {
-        // Fallback or cleanup if user cached but no token
-        localStorage.removeItem('campus_event_hub_user');
+      if (!storedToken) {
+        setLoading(false);
+        return;
       }
-      setLoading(false);
+
+      try {
+        const authData = await authService.getMe();
+        setUser(authData.user);
+
+        const profileResponse = await api.get('/api/profile/me/profile');
+        setProfile(profileResponse.data);
+      } catch (error) {
+        console.error('Session expired or invalid:', error);
+
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+        localStorage.removeItem('token');
+
+        setUser(null);
+        setProfile(null);
+      } finally {
+        setLoading(false);
+      }
     }
+
     initializeAuth();
   }, []);
 
-  // Login handler utilizing authService
+  // -------------------------------
+  // LOGIN
+  // -------------------------------
   const login = async (email, password) => {
     try {
       const data = await authService.login(email, password);
       const { token, user: loggedUser } = data;
 
-      // Persist token & user profile in Local Storage (Remember Session)
-     localStorage.setItem('campus_event_hub_token', token);
-localStorage.setItem('token', token); // Added for Socket.IO
-localStorage.setItem(
-  'campus_event_hub_user',
-  JSON.stringify(loggedUser)
-);
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem('token', token); // socket support
+      localStorage.setItem(USER_KEY, JSON.stringify(loggedUser));
+
       setUser(loggedUser);
 
-      // Fetch active student profile details
       const profileResponse = await api.get('/api/profile/me/profile');
       setProfile(profileResponse.data);
 
       return { success: true };
     } catch (error) {
-      const message = error.response?.data?.message || 'Invalid campus credentials. Please try again.';
-      return { success: false, error: message };
+      return {
+        success: false,
+        error:
+          error.response?.data?.message ||
+          'Invalid campus credentials. Please try again.'
+      };
     }
   };
 
-  // Registration handler utilizing authService
+  // -------------------------------
+  // REGISTER
+  // -------------------------------
   const register = async (email, password, name, major) => {
     try {
       const data = await authService.register(email, password, name, major);
       const { token, user: registeredUser } = data;
 
-      // Persist session details
-      localStorage.setItem('campus_event_hub_token', token);
-localStorage.setItem('token', token); // Added for Socket.IO
-localStorage.setItem(
-  'campus_event_hub_user',
-  JSON.stringify(registeredUser)
-);
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem('token', token);
+      localStorage.setItem(USER_KEY, JSON.stringify(registeredUser));
 
       setUser(registeredUser);
 
-      // Fetch newly created profile details
       const profileResponse = await api.get('/api/profile/me/profile');
       setProfile(profileResponse.data);
 
       return { success: true };
     } catch (error) {
-      const message = error.response?.data?.message || 'Registration failed. Try again.';
-      return { success: false, error: message };
+      return {
+        success: false,
+        error:
+          error.response?.data?.message ||
+          'Registration failed. Try again.'
+      };
     }
   };
 
-  // Logout handler utilizing authService
+  // -------------------------------
+  // LOGOUT
+  // -------------------------------
   const logout = async () => {
     try {
       await authService.logout();
     } catch (err) {
-      console.warn("API logout alert:", err);
+      console.warn('Logout API error:', err);
     } finally {
-      // Clear all state and local storage keys (Remember Session end)
-      localStorage.removeItem('campus_event_hub_token');
-localStorage.removeItem('campus_event_hub_user');
-localStorage.removeItem('token'); // Remove Socket.IO token too
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      localStorage.removeItem('token');
+
       setUser(null);
       setProfile(null);
     }
   };
 
-  // Helper: Refresh profile details (bio, major, skills, interests)
+  // -------------------------------
+  // REFRESH PROFILE
+  // -------------------------------
   const refreshProfile = async () => {
     try {
       const response = await api.get('/api/profile/me/profile');
       setProfile(response.data);
-      const updatedUser = { 
-        id: response.data.id, 
-        email: response.data.email, 
-        name: response.data.name, 
-        major: response.data.major 
+
+      const updatedUser = {
+        id: response.data.id,
+        email: response.data.email,
+        name: response.data.name,
+        major: response.data.major
       };
-      localStorage.setItem('campus_event_hub_user', JSON.stringify(updatedUser));
+
+      localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
       setUser(updatedUser);
     } catch (error) {
-      console.error("Error refreshing active profile details:", error);
+      console.error('Profile refresh failed:', error);
     }
   };
 
-  // Helper: Update basic fields
+  // -------------------------------
+  // UPDATE PROFILE
+  // -------------------------------
   const updateProfile = async (profileData) => {
-  try {
-    console.log("PROFILE DATA SENT:", profileData);
+    try {
+      const response = await api.put('/api/profile/update', profileData);
 
-    const response = await api.put('/api/profile/update', profileData);
+      await refreshProfile();
 
-    console.log("SERVER RESPONSE:", response.data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Profile update failed.'
+      };
+    }
+  };
 
-    await refreshProfile();
-
-    return { success: true, data: response.data };
-
-  } catch (error) {
-    console.log("FULL ERROR:", error.response);
-    console.log("ERROR DATA:", error.response?.data);
-
-    return {
-      success: false,
-      error: error.response?.data?.message || 'Profile update failed.'
-    };
-  }
-};
-  // Helper: Update skills tags
+  // -------------------------------
+  // UPDATE SKILLS
+  // -------------------------------
   const updateSkills = async (skills) => {
     try {
       const response = await api.put('/api/profile/skills', { skills });
       setProfile(response.data);
       return { success: true };
     } catch (error) {
-      return { success: false, error: error.response?.data?.message || 'Skills update failed.' };
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Skills update failed.'
+      };
     }
   };
 
-  // Helper: Update interests tags
+  // -------------------------------
+  // UPDATE INTERESTS
+  // -------------------------------
   const updateInterests = async (interests) => {
     try {
       const response = await api.put('/api/profile/interests', { interests });
       setProfile(response.data);
       return { success: true };
     } catch (error) {
-      return { success: false, error: error.response?.data?.message || 'Interests update failed.' };
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Interests update failed.'
+      };
     }
   };
 
+  // -------------------------------
+  // CONTEXT VALUE
+  // -------------------------------
   const value = {
     user,
     profile,
