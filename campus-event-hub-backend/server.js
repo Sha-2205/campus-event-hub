@@ -26,7 +26,7 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
-  'https://campus-event-hub-75ml.onrender.com'
+  'https://campus-event-hub-three.vercel.app'
 ];
 
 // Create HTTP server and Socket.IO instance
