@@ -26,6 +26,7 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
+  'https://campus-event-hub-75ml.onrender.com'
 ];
 
 // Create HTTP server and Socket.IO instance
