@@ -39,18 +39,21 @@ export const protect = async (req, res, next) => {
         message: "User not found",
       });
     }
-
+    console.log("User found:", user.email);
     user.lastLogin = new Date();
     await user.save();
-    console.log("Before next()");
-    console.log("typeof next:", typeof next);
+    console.log("User saved");
+    console.log("typeof next =", typeof next);
+    console.log("About to call next()");
     next();
   } catch (error) {
-    console.log("JWT Error:", error.message);
+  console.error("========== FULL ERROR ==========");
+  console.error(error);
+  console.error(error.stack);
 
-    return res.status(401).json({
-      success: false,
-      message: "Not authorized to access this route",
-    });
-  }
+  return res.status(500).json({
+    success: false,
+    message: error.message,
+  });
+}
 };
